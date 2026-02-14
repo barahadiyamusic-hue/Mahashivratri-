@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maha Shivratri | Har Har Mahadev</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        /* --- BASE & BACKGROUND --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .bg-gradient {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 100%, #1a237e 0%, #0d1245 40%, #000000 90%);
+            z-index: 1;
+        }
+
+        canvas#starfield {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+        }
+
+        .lightning-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.15);
+            opacity: 0;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        /* --- SHIVA & EFFECTS --- */
+        #stage { position: relative; width: 100%; height: 100%; z-index: 10; }
+
+        .scene-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0;
+            width: 100%;
+        }
+
+        .scene-mahadev {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .shiva-img {
+            max-height: 70vh;
+            filter: drop-shadow(0 0 50px rgba(66, 133, 244, 0.7));
+            z-index: 20;
+        }
+
+        /* --- NEW: DIVINE WISH TEXT --- */
+        .divine-wish {
+            position: absolute;
+            top: 10%;
+            width: 100%;
+            text-align: center;
+            font-size: 2.5rem;
+            color: #ffd700;
+            text-shadow: 0 0 15px #ffae00, 0 0 30px #fff;
+            opacity: 0;
+            z-index: 50;
+            font-weight: bold;
+        }
+
+        /* --- NEW: PHOTO SLIDESHOW --- */
+        .photo-slideshow {
+            position: absolute;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 180px;
+            height: 240px;
+            border: 3px solid #ffd700;
+            border-radius: 15px;
+            overflow: hidden;
+            opacity: 0;
+            z-index: 50;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+        }
+
+        .photo-slideshow img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        .photo-slideshow img.active { opacity: 1; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); filter: blur(10px); }
+        }
+
+        @keyframes finalReveal {
+            to { opacity: 1; }
+        }
+
+        @keyframes lightning {
+            0%, 100% { opacity: 0; }
+            5%, 10% { opacity: 0.6; }
+        }
+
+        .petal { position: absolute; pointer-events: none; z-index: 25; border-radius: 50% 0 50% 50%; }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop>
+        <source src="https://assets.mixkit.co/music/preview/mixkit-meditation-flute-and-bells-2679.mp3" type="audio/mp3">
+    </audio>
+
+    <div class="bg-gradient"></div>
+    <canvas id="starfield"></canvas>
+    <div class="lightning-overlay" id="lightning"></div>
+
+    <div id="stage">
+        <div id="scene1" class="scene-text">
+            <h1 style="font-size: 4rem; color: #ffd700;">ॐ</h1>
+            <h2 style="font-size: 3rem;">Happy Maha Shivratri</h2>
+        </div>
+
+        <div id="scene3" class="scene-mahadev">
+            <img src="img/shivji.png" alt="Lord Shiva" class="shiva-img">
+            <div id="flower-rain"></div>
+        </div>
+
+        <div id="wishText" class="divine-wish">ʜᴀᴘᴘʏ ᴍᴀʜᴀꜱʜɪᴠʀᴀᴛʀɪ</div>
+        
+        <div id="slideshow" class="photo-slideshow">
+            <img src="img/photo1.jpg" class="active">
+            <img src="img/photo2.jpg">
+            <img src="img/photo3.jpg">
+            <img src="img/photo4.jpg">
+            <img src="img/photo5.jpg">
+            <img src="img/photo6.jpg">
+            <img src="img/photo7.jpg">
+            <img src="img/photo8.jpg">
+            <img src="img/photo9.jpg">
+        </div>
+    </div>
+
+    <script>
+        /* --- STARS --- */
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        function initStars() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            for(let i=0; i<150; i++) stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2,
+                speed: Math.random() * 0.05 + 0.01
+            });
+        }
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            stars.forEach(s => {
+                s.y -= s.speed;
+                if (s.y < 0) s.y = canvas.height;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
+                ctx.fill();
+            });
+            requestAnimationFrame(animateStars);
+        }
+
+        /* --- FLOWERS --- */
+        function createPetal() {
+            const container = document.getElementById('flower-rain');
+            const p = document.createElement('div');
+            const colors = ['#ffc0cb', '#ffa500', '#ffffff', '#ffd700'];
+            p.className = 'petal';
+            const size = Math.random() * 15 + 10;
+            p.style.width = size + 'px';
+            p.style.height = size + 'px';
+            p.style.backgroundColor = colors[Math.floor(Math.random()*4)];
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.top = '-20px';
+            p.style.opacity = Math.random();
+            container.appendChild(p);
+            
+            const duration = Math.random() * 5 + 5;
+            p.animate([
+                { transform: `translate(0, 0) rotate(0deg)` },
+                { transform: `translate(${Math.random()*100 - 50}px, 100vh) rotate(720deg)` }
+            ], { duration: duration * 1000, iterations: Infinity });
+        }
+
+        /* --- LIGHTNING --- */
+        function triggerLightning() {
+            const l = document.getElementById('lightning');
+            l.style.animation = 'lightning 1.5s linear';
+            setTimeout(() => { l.style.animation = 'none'; }, 1500);
+            setTimeout(triggerLightning, Math.random() * 5000 + 3000);
+        }
+
+        /* --- SLIDESHOW LOGIC --- */
+        function startSlideshow() {
+            const imgs = document.querySelectorAll('.photo-slideshow img');
+            let curr = 0;
+            setInterval(() => {
+                imgs[curr].classList.remove('active');
+                curr = (curr + 1) % imgs.length;
+                imgs[curr].classList.add('active');
+            }, 4000);
+        }
+
+        /* --- ORCHESTRATION --- */
+        window.onload = () => {
+            initStars();
+            animateStars();
+            triggerLightning();
+            setInterval(createPetal, 300);
+
+            // 1. पहला टेक्स्ट दिखाओ
+            const s1 = document.getElementById('scene1');
+            s1.style.animation = "fadeInOut 4s forwards";
+
+            // 2. शिवजी को दिखाओ
+            setTimeout(() => {
+                document.getElementById('scene3').style.animation = "finalReveal 3s forwards";
+            }, 4500);
+
+            // 3. शुभकामना टेक्स्ट और फोटो दिखाओ
+            setTimeout(() => {
+                document.getElementById('wishText').style.animation = "finalReveal 2s forwards";
+                const ss = document.getElementById('slideshow');
+                ss.style.animation = "finalReveal 2s forwards";
+                startSlideshow();
+            }, 7500);
+        };
+    </script>
+</body>
+</html>
